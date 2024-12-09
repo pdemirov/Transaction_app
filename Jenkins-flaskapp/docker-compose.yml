@@ -1,0 +1,40 @@
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.10.1
+    container_name: pesho_elasticsearch_flask
+    environment:
+      - discovery.type=single-node
+    ports:
+      - "9200:9200"
+    volumes:
+      - /home/krustachka/development/Flask/Jenkins-flaskapp/es_server:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  flask_app:
+    build: .   # This tells docker-compose to use the Dockerfile in the current directory
+    container_name: pesho_flask_app
+    ports:
+      - "127.0.0.1:5000:5000"
+    depends_on:
+      - elasticsearch
+    environment:
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+      - FLASK_ENV=development
+    volumes:
+      - .:/app
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.10.1
+    container_name: pesho_kibanata
+    ports:
+      - "5601:5601"
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+
+volumes:
+  esdata:
+    driver: local
